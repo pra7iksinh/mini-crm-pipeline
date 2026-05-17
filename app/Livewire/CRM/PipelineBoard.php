@@ -90,7 +90,6 @@ class PipelineBoard extends Component
 
         $this->isEditing = true;
         $this->showModal = true;
-        $this->dispatch('open-edit-modal');
         $this->dispatch('modal-loaded');
     }
 

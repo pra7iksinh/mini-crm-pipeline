@@ -33,7 +33,7 @@
     @confirm-delete.window="deleteModalOpen = true; leadIdToDelete = $event.detail.id"
     @lead-deleted.window="deleteModalOpen = false"
     @open-edit-modal.window="showModal = true; isLoading = true"
-    @open-add-modal.window="showModal = true; isLoading = false"
+    @open-add-modal.window="showModal = true"
     @modal-loaded.window="isLoading = false"
     @close-modal.window="showModal = false"
 >
