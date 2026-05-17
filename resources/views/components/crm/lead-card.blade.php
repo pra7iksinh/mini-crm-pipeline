@@ -44,6 +44,7 @@
 >
     {{-- Highlight overlay: fades out after card is created or moved to a new column --}}
     <div
+        x-cloak
         x-show="flash"
         x-transition:leave="transition-all duration-700 ease-out"
         x-transition:leave-start="opacity-100"
@@ -65,7 +66,7 @@
 
                 <div class="flex shrink-0 items-center gap-1 max-lg:opacity-100 lg:opacity-0 lg:transition-opacity lg:group-hover:opacity-100">
                     <button type="button"
-                        @click="$dispatch('open-edit-modal'); $wire.editLead('{{ $lead->id }}').then(() => { $dispatch('modal-loaded') })"
+                        @click="$wire.editLead('{{ $lead->id }}')"
                         title="Edit"
                         class="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-indigo-600 dark:hover:bg-zinc-800 dark:hover:text-indigo-400"
                     >

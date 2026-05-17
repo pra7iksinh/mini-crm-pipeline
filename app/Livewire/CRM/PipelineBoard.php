@@ -4,20 +4,24 @@ namespace App\Livewire\CRM;
 
 use App\Enums\LeadStatus;
 use App\Models\Lead;
-use Illuminate\Support\Collection;
+use Flux\Flux;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 class PipelineBoard extends Component
 {
     use AuthorizesRequests;
-    
+
     public ?string $leadId = null;
 
     public string $title = '';
+
     public string $email = '';
+
     public string $phone = '';
+
     public string $status = 'lead';
 
     protected function rules()
@@ -31,6 +35,7 @@ class PipelineBoard extends Component
     }
 
     public bool $isEditing = false;
+
     public bool $showModal = false;
 
     /**
@@ -82,9 +87,11 @@ class PipelineBoard extends Component
         $this->email = $lead->email;
         $this->phone = $lead->phone ?? '';
         $this->status = $lead->status->value;
-        
+
         $this->isEditing = true;
         $this->showModal = true;
+        $this->dispatch('open-edit-modal');
+        $this->dispatch('modal-loaded');
     }
 
     public function saveLead()
@@ -100,6 +107,7 @@ class PipelineBoard extends Component
                 'phone' => $this->phone,
                 'status' => $this->status,
             ]);
+            Flux::toast(variant: 'success', heading: 'Lead updated', text: '"'.$this->title.'" has been saved.');
         } else {
             Lead::create([
                 'user_id' => auth()->id(),
@@ -108,26 +116,24 @@ class PipelineBoard extends Component
                 'phone' => $this->phone,
                 'status' => $this->status,
             ]);
+            Flux::toast(variant: 'success', heading: 'Lead created', text: '"'.$this->title.'" has been added to the pipeline.');
         }
 
         $this->showModal = false;
+        $this->dispatch('close-modal');
         $this->resetForm();
     }
 
     public function deleteLead(string $id)
     {
         $lead = Lead::findOrFail($id);
-        
+
         $this->authorize('delete', $lead);
-        
+
         $lead->delete();
 
-        $this->dispatch('toast-show', [
-            'variant' => 'success',
-            'heading' => 'Deleted!',
-            'text' => 'Lead has been permanently removed.',
-        ]);
-        
+        Flux::toast(variant: 'success', heading: 'Lead deleted', text: 'The lead has been permanently removed.');
+
         $this->dispatch('lead-deleted');
     }
 

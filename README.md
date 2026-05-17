@@ -1,6 +1,6 @@
 # Mini CRM Pipeline
 
-A modern, reactive Customer Relationship Management (CRM) pipeline application built with Laravel and Livewire.
+Customer Relationship Management (CRM) pipeline application built with Laravel and Livewire.
 
 Built with Livewire Flux for dynamic UI interactions and Tailwind CSS for a clean, responsive interface.
 
@@ -67,6 +67,19 @@ Update your `.env` file with your database credentials and application configura
 ```bash
 php artisan migrate
 ```
+### 5. Run Database Seeders
+
+```bash
+php artisan db:seed
+```
+
+This creates a demo user and seeds **10 leads per pipeline stage** (40 leads total).
+
+| Field    | Value              |
+|----------|--------------------|
+| Email    | test@example.com   |
+| Password | Test105*           |
+
 
 ### 5. Build Frontend Assets
 Build optimized frontend assets for production:

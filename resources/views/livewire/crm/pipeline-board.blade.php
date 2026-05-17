@@ -35,6 +35,7 @@
     @open-edit-modal.window="showModal = true; isLoading = true"
     @open-add-modal.window="showModal = true; isLoading = false"
     @modal-loaded.window="isLoading = false"
+    @close-modal.window="showModal = false"
 >
     {{-- Mobile: 2×2 column tab grid --}}
     <div class="lg:hidden grid grid-cols-2 gap-1.5 border-b border-zinc-200 bg-white/90 px-4 py-3 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900/90">
@@ -56,7 +57,7 @@
     {{-- Columns --}}
     <div
         x-ref="board"
-        class="crm-scroll flex flex-1 min-h-0 gap-6 overflow-x-auto px-6 py-4
+        class="crm-scroll flex flex-1 min-h-0 gap-6 overflow-x-auto px-1 py-4
                max-lg:snap-x max-lg:snap-mandatory max-lg:scroll-pl-4 max-lg:gap-0 max-lg:px-4 max-lg:pb-4"
     >
         @foreach($this->statuses as $status)
@@ -83,7 +84,7 @@
                     class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 w-full sm:max-w-lg dark:bg-zinc-900 dark:border dark:border-zinc-800"
                     @click.outside="showModal = false"
                 >
-                    <form wire:submit="saveLead">
+                    <form wire:submit="saveLead" wire:key="lead-form-{{ $leadId ?? 'new' }}">
                         <div class="relative px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                             {{-- Centered Loader Overlay --}}
                             <div x-show="isLoading" x-transition.opacity class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm dark:bg-zinc-900/60">
@@ -111,7 +112,7 @@
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Phone</label>
-                                        <input type="tel" wire:model.blur="phone" placeholder="+1 (555) 123-4567" pattern="\+?[\d\s\-()]{7,20}" title="Enter a valid phone number (7–20 digits; may include +, spaces, dashes, parentheses)" x-on:input="$el.value = $el.value.replace(/[^\d\s\-()+]/g, ''); $el.dispatchEvent(new Event('input'))" class="mt-1 block w-full rounded-md border-zinc-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-base dark:bg-zinc-800 dark:text-zinc-100 transition-colors @error('phone') border-red-500 ring-1 ring-red-500 focus:border-red-500 focus:ring-red-500 dark:border-red-500 @else dark:border-zinc-700 @enderror">
+                                        <input type="tel" wire:model.blur="phone" placeholder="+1 (555) 123-4567" pattern="\+?[\d\s\-\(\)]{7,20}" title="Enter a valid phone number (7–20 digits; may include +, spaces, dashes, parentheses)" x-on:input="$el.value = $el.value.replace(/[^\d\s\-()+]/g, '')" class="mt-1 block w-full rounded-md border-zinc-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-base dark:bg-zinc-800 dark:text-zinc-100 transition-colors @error('phone') border-red-500 ring-1 ring-red-500 focus:border-red-500 focus:ring-red-500 dark:border-red-500 @else dark:border-zinc-700 @enderror">
                                         @error('phone') <span class="mt-1 block text-sm font-medium text-red-500 dark:text-red-400">{{ $message }}</span> @enderror
                                     </div>
                                     <div class="sm:col-span-2">
@@ -129,12 +130,12 @@
                         <div class="bg-zinc-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 dark:bg-zinc-800/50">
                             <button type="submit" wire:loading.attr="disabled" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto transition-colors relative">
                                 <span wire:loading.remove wire:target="saveLead">Save Lead</span>
-                                <span wire:loading.flex wire:target="saveLead" class="items-center justify-center gap-2">
-                                    <svg class="size-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <span wire:loading.inline-flex wire:target="saveLead" class="inline-flex items-center gap-2">
+                                    <svg class="size-4 shrink-0 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
-                                    Saving...
+                                    <span>Saving...</span>
                                 </span>
                             </button>
                             <button type="button" @click="showModal = false" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 hover:bg-zinc-50 sm:mt-0 sm:w-auto dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-600 dark:hover:bg-zinc-700 transition-colors">
@@ -186,12 +187,12 @@
                                 class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto transition-colors"
                         >
                             <span wire:loading.remove wire:target="deleteLead">Yes, delete it!</span>
-                            <span wire:loading wire:target="deleteLead" class="flex items-center gap-2">
-                                <svg class="size-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <span wire:loading.inline-flex wire:target="deleteLead" class="inline-flex items-center gap-2">
+                                <svg class="size-4 shrink-0 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                Deleting...
+                                <span>Deleting...</span>
                             </span>
                         </button>
                         <button type="button" @click="deleteModalOpen = false" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 hover:bg-zinc-50 sm:mt-0 sm:w-auto dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-600 dark:hover:bg-zinc-700 transition-colors">
