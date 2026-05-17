@@ -1,39 +1,86 @@
-<div class="h-full w-full overflow-x-auto px-6 pt-4 pb-4"
-    x-data="{ 
+<div class="flex h-full w-full flex-col"
+    x-data="{
         showModal: @entangle('showModal'),
         deleteModalOpen: false,
         leadIdToDelete: null,
-        isLoading: false
+        isLoading: false,
+        activeColumn: 0,
+        _obs: null,
+        initColumns() {
+            const board = this.$refs.board;
+            if (!board || window.matchMedia('(min-width: 1024px)').matches) return;
+            this._obs = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+                        const cols = [...board.querySelectorAll('[data-column]')];
+                        const idx = cols.indexOf(entry.target);
+                        if (idx !== -1) this.activeColumn = idx;
+                    }
+                });
+            }, { root: board, threshold: 0.5 });
+            board.querySelectorAll('[data-column]').forEach(el => this._obs.observe(el));
+        },
+        scrollToColumn(idx) {
+            const board = this.$refs.board;
+            const cols = [...board.querySelectorAll('[data-column]')];
+            if (cols[idx]) {
+                this.activeColumn = idx;
+                cols[idx].scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+            }
+        }
     }"
+    x-init="$nextTick(() => initColumns())"
     @confirm-delete.window="deleteModalOpen = true; leadIdToDelete = $event.detail.id"
     @lead-deleted.window="deleteModalOpen = false"
     @open-edit-modal.window="showModal = true; isLoading = true"
     @open-add-modal.window="showModal = true; isLoading = false"
     @modal-loaded.window="isLoading = false"
 >
-    <div class="flex h-full gap-6 px-1">
+    {{-- Mobile: 2×2 column tab grid --}}
+    <div class="lg:hidden grid grid-cols-2 gap-1.5 border-b border-zinc-200 bg-white/90 px-4 py-3 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900/90">
+        @foreach($this->statuses as $i => $status)
+            <button
+                type="button"
+                @click="scrollToColumn({{ $i }})"
+                :class="activeColumn === {{ $i }}
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'"
+                class="w-full rounded-lg px-3 py-2 text-center text-xs font-semibold transition-colors duration-150"
+            >
+                {{ $status->label() }}
+                <span class="ml-1 font-normal opacity-70">{{ $this->leadsByStatus->get($status->value, collect())->count() }}</span>
+            </button>
+        @endforeach
+    </div>
+
+    {{-- Columns --}}
+    <div
+        x-ref="board"
+        class="crm-scroll flex flex-1 min-h-0 gap-6 overflow-x-auto px-6 py-4
+               max-lg:snap-x max-lg:snap-mandatory max-lg:scroll-pl-4 max-lg:gap-0 max-lg:px-4 max-lg:pb-4"
+    >
         @foreach($this->statuses as $status)
-            <x-crm.lead-column 
-                :status="$status" 
-                :leads="$this->leadsByStatus->get($status->value, collect())" 
+            <x-crm.lead-column
+                :status="$status"
+                :leads="$this->leadsByStatus->get($status->value, collect())"
             />
         @endforeach
     </div>
 
-    {{-- Modal --}}
+    {{-- Add / Edit Modal --}}
     <div x-cloak x-show="showModal" class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div x-show="showModal" x-transition.opacity class="fixed inset-0 bg-zinc-900/80 backdrop-blur-sm transition-opacity"></div>
-        
+
         <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
             <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-                <div x-show="showModal" 
-                    x-transition:enter="ease-out duration-300" 
-                    x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
-                    x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
-                    x-transition:leave="ease-in duration-200" 
-                    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
-                    x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
-                    class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg dark:bg-zinc-900 dark:border dark:border-zinc-800"
+                <div x-show="showModal"
+                    x-transition:enter="ease-out duration-300"
+                    x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                    x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                    x-transition:leave="ease-in duration-200"
+                    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                    x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                    class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 w-full sm:max-w-lg dark:bg-zinc-900 dark:border dark:border-zinc-800"
                     @click.outside="showModal = false"
                 >
                     <form wire:submit="saveLead">
@@ -46,7 +93,7 @@
                                 </svg>
                             </div>
 
-                            {{-- Form Content (Always rendered to maintain modal height) --}}
+                            {{-- Form Content --}}
                             <div>
                                 <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100" id="modal-title">
                                     {{ $isEditing ? 'Edit Lead' : 'Add New Lead' }}
@@ -103,19 +150,19 @@
     {{-- Delete Confirmation Modal --}}
     <div x-cloak x-show="deleteModalOpen" class="relative z-50" aria-labelledby="delete-modal-title" role="dialog" aria-modal="true">
         <div x-show="deleteModalOpen" x-transition.opacity class="fixed inset-0 bg-zinc-900/80 backdrop-blur-sm transition-opacity"></div>
-        
+
         <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
             <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-                <div x-show="deleteModalOpen" 
-                    x-transition:enter="ease-out duration-300" 
-                    x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
-                    x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
-                    x-transition:leave="ease-in duration-200" 
-                    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
-                    x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                <div x-show="deleteModalOpen"
+                    x-transition:enter="ease-out duration-300"
+                    x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                    x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                    x-transition:leave="ease-in duration-200"
+                    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                    x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                     @click.outside="deleteModalOpen = false"
                     @keydown.escape.window="deleteModalOpen = false"
-                    class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md dark:bg-zinc-900 dark:border dark:border-zinc-800"
+                    class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 w-full sm:max-w-md dark:bg-zinc-900 dark:border dark:border-zinc-800"
                 >
                     <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4 dark:bg-zinc-900">
                         <div class="sm:flex sm:items-start">
@@ -133,7 +180,7 @@
                         </div>
                     </div>
                     <div class="bg-zinc-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 dark:bg-zinc-800/50">
-                        <button type="button" 
+                        <button type="button"
                                 @click="$wire.deleteLead(leadIdToDelete)"
                                 wire:loading.attr="disabled"
                                 class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto transition-colors"

@@ -17,6 +17,7 @@
         : strtoupper(mb_substr($lead->title, 0, 2));
 
     $wasUpdated = $lead->updated_at->gt($lead->created_at->addMinutes(5));
+    $allStatuses = \App\Enums\LeadStatus::cases();
 
     $shortTime = function (string $time): string {
         $time = str_replace(
@@ -62,7 +63,7 @@
                     {{ $lead->title }}
                 </h4>
 
-                <div class="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <div class="flex shrink-0 items-center gap-1 max-lg:opacity-100 lg:opacity-0 lg:transition-opacity lg:group-hover:opacity-100">
                     <button type="button"
                         @click="$dispatch('open-edit-modal'); $wire.editLead('{{ $lead->id }}').then(() => { $dispatch('modal-loaded') })"
                         title="Edit"
@@ -125,8 +126,23 @@
         @endif
     </div>
 
+    {{-- Move To: mobile-only dropdown (drag-and-drop unavailable on touch) --}}
+    <div class="lg:hidden mt-3">
+        <select
+            @change="$wire.moveLeadToStatus('{{ $lead->id }}', $event.target.value); $event.target.value = ''"
+            class="w-full cursor-pointer rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-500 transition-colors focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
+        >
+            <option value="" disabled selected>Move to…</option>
+            @foreach($allStatuses as $s)
+                @if($s->value !== $lead->status->value)
+                    <option value="{{ $s->value }}">{{ $s->label() }}</option>
+                @endif
+            @endforeach
+        </select>
+    </div>
+
     {{-- Footer --}}
-    <div class="mt-3 flex items-center justify-between gap-2 border-t border-zinc-100 pt-3 text-xs text-zinc-400 dark:border-zinc-800 dark:text-zinc-500">
+    <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-100 pt-3 text-xs text-zinc-400 dark:border-zinc-800 dark:text-zinc-500">
         <span
             class="flex items-center gap-1 whitespace-nowrap"
             title="{{ $lead->created_at->toDayDateTimeString() }}"

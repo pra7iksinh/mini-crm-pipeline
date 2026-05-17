@@ -1,6 +1,9 @@
 @props(['status', 'leads'])
 
-<div class="flex h-full w-80 flex-col gap-4">
+<div
+    data-column="{{ $status->value }}"
+    class="flex h-full w-80 shrink-0 flex-col gap-4 max-lg:w-[calc(100vw-3rem)] max-lg:snap-start max-lg:snap-always max-lg:pr-4"
+>
     {{-- Column Header --}}
     <div class="sticky top-0 z-10 flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
         <div class="flex items-center gap-2">
