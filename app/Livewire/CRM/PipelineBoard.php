@@ -74,8 +74,9 @@ class PipelineBoard extends Component
 
     public function editLead(string $id)
     {
-        $lead = Lead::where('user_id', auth()->id())->findOrFail($id);
-        
+        $lead = Lead::findOrFail($id);
+        $this->authorize('update', $lead);
+
         $this->leadId = $lead->id;
         $this->title = $lead->title;
         $this->email = $lead->email;
@@ -91,7 +92,8 @@ class PipelineBoard extends Component
         $this->validate();
 
         if ($this->isEditing && $this->leadId) {
-            $lead = Lead::where('user_id', auth()->id())->findOrFail($this->leadId);
+            $lead = Lead::findOrFail($this->leadId);
+            $this->authorize('update', $lead);
             $lead->update([
                 'title' => $this->title,
                 'email' => $this->email,
@@ -136,6 +138,8 @@ class PipelineBoard extends Component
         if (! $validStatus) {
             return;
         }
+
+        $this->authorize('update', Lead::findOrFail($leadId));
 
         // All leads in the target column except the one being moved, in current order
         $ordered = Lead::where('user_id', auth()->id())
